@@ -14,8 +14,8 @@ module.exports = class QuickSwitcherMoreChannels extends Plugin {
   async startPlugin() {
     powercord.api.i18n.loadAllStrings(i18n);
 
-    //FIXME: stop doing this when things start working
-    this.settings.set("favorite-channels", new Set());
+    if (!(this.settings.get("favorite-channels") instanceof Set))
+      this.settings.set("favorite-channels", new Set());
 
     const QuickSwitcher = getModule(
       (m) => m?.default?.displayName === "QuickSwitcherConnected",
@@ -29,22 +29,20 @@ module.exports = class QuickSwitcherMoreChannels extends Plugin {
       "default",
       (_, res) => {
         if (res.props.query != "") return res;
-        let index = 0;
-        // Favorite Channels goes after Last Channel if present
-        if (
-          res.props.results.length > 0 &&
-          res.props.results[0].record.id === "Last Channel"
-        )
-          index = 2;
-        if (
-          res.props.results.length > index &&
-          res.props.results[index].record.id === "Favorite Channels"
-        )
-          return res;
+        let ids_in_list = new Set();
+        for (let result of res.props.results) {
+          // Don't add favorites twice. Unclear if/when this would happen.
+          if (result.record.id === "Favorite Channels") return res
+          // Keep track of channels already in the list as last/mention/draft/etc
+          ids_in_list.add(result.record.id);
+        }
         const favorites = this.settings.get("favorite-channels");
         if (favorites && favorites.size > 0) {
+          // create a list of favorite channels
           let favorites_results = Array.from(favorites, (id) => {
             let channel = getChannel(id.toString());
+            // duplicate entries cause misbehavior in the list view
+            if (ids_in_list.has(id)) return undefined
             return {
               comparator: channel.name,
               record: channel,
@@ -52,6 +50,7 @@ module.exports = class QuickSwitcherMoreChannels extends Plugin {
               type: "TEXT_CHANNEL",
             };
           });
+          // add a header to the top of the list
           favorites_results.unshift({
             record: {
               id: "Favorite Channels",
@@ -60,12 +59,17 @@ module.exports = class QuickSwitcherMoreChannels extends Plugin {
             score: 0,
             type: "HEADER",
           });
-          res.props.results.splice(index, 0, ...favorites_results);
+          // remove all the undefined entries
+          favorites_results = favorites_results.filter( n => n );
+          // add favorites to the bottom of the list
+          res.props.results.push(...favorites_results);
         }
         return res;
       }
     );
+    QuickSwitcher.default.displayName = "QuickSwitcherConnected";
 
+    
     const iconClasses = await getModule(["iconItem"]);
     const Tooltip = await getModuleByDisplayName("Tooltip");
     const ChannelItem = await getModule(
@@ -119,7 +123,7 @@ module.exports = class QuickSwitcherMoreChannels extends Plugin {
                       favorites.delete(args[0]["channel"]["id"]);
                       this.settings.set("favorite-channels", favorites);
                     }
-                    //FIXME: this is just to force the ChannelItem to re-render with its new favorite status
+                    //FIXME: find another way to re-render the ChannelItem
                     let muted = getCurrentChannelSettings(
                       args[0]["channel"]["guild_id"],
                       args[0]["channel"]["id"]
@@ -143,8 +147,7 @@ module.exports = class QuickSwitcherMoreChannels extends Plugin {
       },
       true
     );
-
-    QuickSwitcher.default.displayName = "QuickSwitcherConnected";
+    ChannelItem.default.displayName = 'ChannelItem'
   }
 
   pluginWillUnload() {
