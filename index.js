@@ -105,7 +105,7 @@ module.exports = class QuickSwitcherMoreChannels extends Plugin {
               (props) =>
                 React.createElement(Icon, {
                   ...props,
-                  name: favorited ? "StarOff" : "Star",
+                  name: favorited ? "CheckboxChecked" : "Checkbox",
                   className: iconClasses.actionIcon,
                   width: 16,
                   height: 16,
