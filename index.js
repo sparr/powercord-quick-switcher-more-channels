@@ -14,11 +14,9 @@ module.exports = class QuickSwitcherMoreChannels extends Plugin {
   async startPlugin() {
     powercord.api.i18n.loadAllStrings(i18n);
 
-
     //FIXME: stop doing this when things start working
     this.settings.set("favorite-channels", new Set());
 
-    
     const QuickSwitcher = getModule(
       (m) => m?.default?.displayName === "QuickSwitcherConnected",
       false
@@ -31,7 +29,6 @@ module.exports = class QuickSwitcherMoreChannels extends Plugin {
       "default",
       (_, res) => {
         if (res.props.query != "") return res;
-        console.log(res);
         let index = 0;
         // Favorite Channels goes after Last Channel if present
         if (
@@ -69,13 +66,19 @@ module.exports = class QuickSwitcherMoreChannels extends Plugin {
       }
     );
 
-
     const iconClasses = await getModule(["iconItem"]);
     const Tooltip = await getModuleByDisplayName("Tooltip");
     const ChannelItem = await getModule(
       (m) => m.default && m.default.displayName == "ChannelItem"
     );
-    const mod = getModule(["updateChannelOverrideSettings"], false);
+    const { getCurrentChannelSettings } = getModule(
+      ["getCurrentChannelSettings"],
+      false
+    );
+    const { updateChannelOverrideSettings } = getModule(
+      ["updateChannelOverrideSettings"],
+      false
+    );
 
     // Add a hover icon to channels in the channel list, to fave/unfave
     inject(
@@ -90,7 +93,6 @@ module.exports = class QuickSwitcherMoreChannels extends Plugin {
           favorites && favorites.size > 0
             ? favorites.has(args[0]["channel"]["id"])
             : false;
-        console.log(favorited);
         args[0].children.unshift(
           React.createElement(
             "div",
@@ -105,22 +107,33 @@ module.exports = class QuickSwitcherMoreChannels extends Plugin {
               (props) =>
                 React.createElement(Icon, {
                   ...props,
-                  name: favorited ? "CheckboxChecked" : "Checkbox",
+                  name: favorited ? "FavoriteFilled" : "Favorite",
                   className: iconClasses.actionIcon,
                   width: 16,
                   height: 16,
                   onClick: () => {
                     if (!favorited) {
-                      console.log(favorites);
                       favorites.add(args[0]["channel"]["id"]);
                       this.settings.set("favorite-channels", favorites);
-                      console.log(favorites);
                     } else {
-                      console.log(favorites);
-                      favorites.remove(args[0]["channel"]["id"]);
-                      this.settings.set(favoritechannels, favorites);
-                      console.log(favorites);
+                      favorites.delete(args[0]["channel"]["id"]);
+                      this.settings.set("favorite-channels", favorites);
                     }
+                    //FIXME: this is just to force the ChannelItem to re-render with its new favorite status
+                    let muted = getCurrentChannelSettings(
+                      args[0]["channel"]["guild_id"],
+                      args[0]["channel"]["id"]
+                    ).channel_is_muted;
+                    updateChannelOverrideSettings(
+                      args[0]["channel"]["guild_id"],
+                      args[0]["channel"]["id"],
+                      { muted: !muted }
+                    );
+                    updateChannelOverrideSettings(
+                      args[0]["channel"]["guild_id"],
+                      args[0]["channel"]["id"],
+                      { muted: muted }
+                    );
                   },
                 })
             )
