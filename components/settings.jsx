@@ -12,6 +12,7 @@ function filterInt(value) {
 }
 
 function filterArray(value) {
+  if (value === "") return []; // otherwise the split produces [""] which is not valid
   value = value.split(",");
   for (let id of value) {
     if (!getChannel(id)) return false;
@@ -83,7 +84,7 @@ module.exports = class Settings extends React.PureComponent {
             <TextInput
               onChange={val => {
                 val = filterArray(val);
-                if (val && val.length > 0) {
+                if (val !== false) {
                   this.setState({isRecentListValid:true});
                   updateSetting('recent-channels', val)
                 } else {
@@ -104,7 +105,7 @@ module.exports = class Settings extends React.PureComponent {
             <TextInput
               onChange={val => {
                 val = filterArray(val);
-                if (val && val.length > 0) {
+                if (val !== false) {
                   this.setState({isFavoriteListValid:true});
                   updateSetting('favorite-channels', val)
                 } else {
