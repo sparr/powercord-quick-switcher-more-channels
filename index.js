@@ -18,9 +18,9 @@ module.exports = class QuickSwitcherMoreChannels extends Plugin {
 
     powercord.api.settings.registerSettings(this.entityID, {
       category: this.entityID,
-      label: 'Quick Switcher More Channels',
-      render: Settings
-    })
+      label: "Quick Switcher More Channels",
+      render: Settings,
+    });
 
     const QuickSwitcher = getModule(
       (m) => m?.default?.displayName === "QuickSwitcherConnected",
