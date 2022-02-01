@@ -10,10 +10,17 @@ const {
 } = require("powercord/webpack");
 const i18n = require("./i18n");
 const { getChannel } = getModule(["getMutableGuildChannels"], false);
+const Settings = require("./components/settings.jsx");
 
 module.exports = class QuickSwitcherMoreChannels extends Plugin {
   async startPlugin() {
     powercord.api.i18n.loadAllStrings(i18n);
+
+    powercord.api.settings.registerSettings(this.entityID, {
+      category: this.entityID,
+      label: 'Quick Switcher More Channels',
+      render: Settings
+    })
 
     const QuickSwitcher = getModule(
       (m) => m?.default?.displayName === "QuickSwitcherConnected",
@@ -27,8 +34,8 @@ module.exports = class QuickSwitcherMoreChannels extends Plugin {
       "default",
       (_, res) => {
         if (res.props.query != "") return res;
-        let do_favorites = true;
-        let do_recents = true;
+        let do_favorites = this.settings.get("show-favorite-channels", true);
+        let do_recents = this.settings.get("show-recent-channels", true);
         let ids_in_list = new Set();
         for (let result of res.props.results) {
           // Don't add categories twice. Unclear if/when this would happen.
@@ -214,8 +221,9 @@ module.exports = class QuickSwitcherMoreChannels extends Plugin {
       recents.unshift(arg.channelId);
 
       // truncate the list if necessary
-      if (recents.length > 10) {
-        recents.pop();
+      let max = this.settings.get("recent-channels-count", 5);
+      if (recents.length > max + 1) {
+        recents.length = max + 1; // remember one more than the max, because the current channel doesn't count
       }
 
       // save the list
@@ -224,6 +232,7 @@ module.exports = class QuickSwitcherMoreChannels extends Plugin {
   };
 
   pluginWillUnload() {
+    powercord.api.settings.unregisterSettings(this.entityID);
     uninject("quick-switcher-more-channels-quickswitcher");
     uninject("quick-switcher-more-channels-channelitem");
     FluxDispatcher.unsubscribe("CHANNEL_SELECT", this.handleChannelSelect);
