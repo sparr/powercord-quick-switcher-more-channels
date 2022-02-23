@@ -178,11 +178,13 @@ module.exports = class QuickSwitcherMoreChannels extends Plugin {
 
   list_to_results(list, existing_result_ids, header_id, header_text) {
     if (list && list.length > 0) {
-      // create a list of favorite channels
+      // convert list of ids to list of objects expected in quick switcher results property
       let results = Array.from(list, (id) => {
-        let channel = getChannel(id.toString());
         // duplicate entries cause misbehavior in the list view
         if (existing_result_ids.has(id)) return undefined;
+        let channel = getChannel(id.toString());
+        // some ids don't resolve to channels?
+        if (channel === undefined) return undefined;
         return {
           comparator: channel.name,
           record: channel,
