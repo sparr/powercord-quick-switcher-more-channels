@@ -1,7 +1,7 @@
 const { React, getModule } = require("powercord/webpack");
 const { TextInput, SwitchItem } = require("powercord/components/settings");
 
-const { getChannel } = getModule(["getMutableGuildChannels"], false);
+const { getChannel } = getModule(["getMutableGuildChannelsForGuild"], false);
 
 function filterInt(value) {
   if (/^[-+]?(\d+|Infinity)$/.test(value)) {

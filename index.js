@@ -9,7 +9,7 @@ const {
   i18n: { Messages },
 } = require("powercord/webpack");
 const i18n = require("./i18n");
-const { getChannel } = getModule(["getMutableGuildChannels"], false);
+const { getChannel } = getModule(["getMutableGuildChannelsForGuild"], false);
 const Settings = require("./components/settings.jsx");
 
 module.exports = class QuickSwitcherMoreChannels extends Plugin {
